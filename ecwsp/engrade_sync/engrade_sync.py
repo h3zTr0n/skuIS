@@ -1,20 +1,3 @@
-#       Copyright 2011 David M Burke <david@davidmburke.com>
-#       
-#       This program is free software; you can redistribute it and/or modify
-#       it under the terms of the GNU General Public License as published by
-#       the Free Software Foundation; either version 2 of the License, or
-#       (at your option) any later version.
-#       
-#       This program is distributed in the hope that it will be useful,
-#       but WITHOUT ANY WARRANTY; without even the implied warranty of
-#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#       GNU General Public License for more details.
-#       
-#       You should have received a copy of the GNU General Public License
-#       along with this program; if not, write to the Free Software
-#       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#       MA 02110-1301, USA.
-
 from ecwsp.engrade_sync.python_engrade import *
 from ecwsp.engrade_sync.models import *
 from ecwsp.schedule.models import *
@@ -27,7 +10,7 @@ class EngradeSync:
     def __init__(self):
         """ Login and get session from Engrade """
         self.api = PythonEngrade()
-    
+
     def generate_all_teachers(self):
         """ Generates all teachers engrade accounts. Does not includes those who
         already have engrade accounts. Stores their engrade ID in teacher sync.
@@ -46,7 +29,7 @@ class EngradeSync:
             )
             i += 1
         return i
-        
+
     def get_engrade_teacher(self, teacher, create=False):
         """ Get an engrade teacher id, create if non existant
         teacher: sis.models.Faculty
@@ -60,8 +43,8 @@ class EngradeSync:
                 teacher=teacher,
                 engrade_teacher_id = en_teachers[0][0]
             )
-        return teacher_sync[0].engrade_teacher_id 
-    
+        return teacher_sync[0].engrade_teacher_id
+
     def generate_courses(self, marking_period):
         """
         Genererate all courses in Engrade for a given marking period.
@@ -75,7 +58,7 @@ class EngradeSync:
             except:
                 course_ids += "Error creating %s, " % (course,)
         return course_ids
-    
+
     def get_engrade_course(self, course, marking_period):
         """ Get an engrade course id, create if non existant. Creates teacher if
         non existant.
@@ -104,7 +87,7 @@ class EngradeSync:
         else:
             course_sync = course_sync[0]
         return course_sync.engrade_course_id
-    
+
     def sync_course_grades(self, course, marking_period, include_comments):
         """ Loads grades from engrade into Course grades for particular marking period.
         Returns: list of errors """

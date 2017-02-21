@@ -1,21 +1,3 @@
-#   Copyright 2012 Burke Software and Consulting LLC
-#   Author David M Burke <david@burkesoftware.com>
-#   
-#   This program is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 3 of the License, or
-#   (at your option) any later version.
-#     
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#      
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#   MA 02110-1301, USA.
-
 from django.contrib import admin
 from django.contrib import messages
 from django import forms
@@ -41,12 +23,12 @@ class StudentAttendanceAdmin(admin.ModelAdmin):
             obj.save()
         except forms.ValidationError:
             messages.warning(request, 'Could not save %s' % (obj,))
-    
+
     def lookup_allowed(self, lookup, *args, **kwargs):
         if lookup in ('student','student__id__exact',):
             return True
         return super(StudentAttendanceAdmin, self).lookup_allowed(lookup, *args, **kwargs)
-        
+
 admin.site.register(StudentAttendance, StudentAttendanceAdmin)
 
 class CourseAttendanceAdmin(admin.ModelAdmin):
@@ -56,7 +38,7 @@ class CourseAttendanceAdmin(admin.ModelAdmin):
         'status'
         ]
     search_fields = ['student__fname', 'student__lname', 'notes', 'status__name']
-    
+
     def lookup_allowed(self, lookup, *args, **kwargs):
         if lookup in ('student','student__id__exact',):
             return True

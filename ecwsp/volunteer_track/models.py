@@ -1,22 +1,3 @@
-#   Copyright 2011 David M Burke
-#   Author Callista Goss <calli@burkesoftware.com>
-#   
-#   This program is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 2 of the License, or
-#   (at your option) any later version.
-#     
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#      
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#   MA 02110-1301, USA.
-
-
 from django.db import models
 from django.db.models import Sum
 from django.contrib.localflavor.us.models import *
@@ -70,21 +51,21 @@ class VolunteerSite(models.Model):
     hours_confirmed = models.BooleanField()
     comment = models.TextField(blank=True)
     secret_key = models.CharField(max_length=20, blank=True, editable=False)
-    
+
     def __unicode__(self):
         return '%s at %s' % (self.volunteer,self.site)
-    
+
     def genKey(self):
         key = ''
         alphabet = 'abcdefghijklmnopqrstuvwxyz1234567890_-'
         for x in random.sample(alphabet,random.randint(19,20)):
             key += x
         self.secret_key = key
-    
+
     def save(self, saved_by_volunteer=False, *args, **kwargs):
         if not self.secret_key or self.secret_key == "":
             self.genKey()
-        
+
         if saved_by_volunteer:
             if not self.volunteer.email_queue:
                 self.volunteer.email_queue = ""
@@ -109,7 +90,7 @@ class VolunteerSite(models.Model):
                         extra={'request': request,'exception':exc_type,'traceback':'%s %s' % (fname,exc_tb.tb_lineno)}
                         )
         super(VolunteerSite, self).save(*args, **kwargs)
-    
+
     def send_email_approval(self):
         """
         Send email to supervisor for approval
@@ -125,7 +106,7 @@ class VolunteerSite(models.Model):
             send_mail(subject, msg, from_addr, [sendTo])
         except:
             logging.warning("Unable to send email to volunteer's supervisor! %s" % (self,), exc_info=True)
-    
+
     def hours_at_site(self):
         return self.hours_set.all().aggregate(Sum('hours'))['hours__sum']
 
@@ -141,6 +122,6 @@ class Volunteer(models.Model):
     email_queue = models.CharField(default="", max_length=1000, blank=True, editable=False, help_text="Used to store nightly notification emails")
     def __unicode__(self):
         return unicode(self.student)
-            
+
     def hours_completed(self):
         return self.volunteersite_set.all().aggregate(Sum('hours__hours'))['hours__hours__sum']

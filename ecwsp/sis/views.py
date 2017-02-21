@@ -1,21 +1,3 @@
-#   Copyright 2011 David M Burke
-#   Author David M Burke <david@burkesoftware.com>
-#   
-#   This program is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 2 of the License, or
-#   (at your option) any later version.
-#     
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#      
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#   MA 02110-1301, USA.
-
 from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
@@ -135,9 +117,9 @@ def import_everything(request):
             return render_to_response('upload.html', {'form': form, 'request': request,})
     form = UploadFileForm()
     return render_to_response('upload.html', {'form': form, 'request': request,}, RequestContext(request, {}))
-    
 
-@user_passes_test(lambda u: u.has_perm("sis.view_student"), login_url='/')    
+
+@user_passes_test(lambda u: u.has_perm("sis.view_student"), login_url='/')
 def photo_flash_card(request, year=None):
     """ Simple flash card game
     """
@@ -167,7 +149,7 @@ def photo_flash_card(request, year=None):
                                'student_img': student.pic.url_530x400,
                                'request': request}, RequestContext(request, {}))
 
-@user_passes_test(lambda u: u.has_perm("sis.view_student"), login_url='/')  
+@user_passes_test(lambda u: u.has_perm("sis.view_student"), login_url='/')
 def transcript_nonofficial(request, student_id):
     """ Build a transcripte based on template called "Transcript Nonoffical"
     """
@@ -181,12 +163,12 @@ def transcript_nonofficial(request, student_id):
             'student': student,
         }
         return pod_report_grade(request, template, transcript=True, options=options, students=student, format=file_format)
-        
+
     messages.info(request, 'Please upload a templated called "Transcript Nonoffical"')
     return HttpResponseRedirect(reverse('admin:index'))
 
 
-@permission_required('sis.reports') 
+@permission_required('sis.reports')
 def school_report_builder_view(request):
     """ sis report builder view
     """
@@ -212,7 +194,7 @@ def school_report_builder_view(request):
                 day = "4"
             if request.POST['p_attendance'] == "Friday":
                 day = "5"
-            
+
             template = Template.objects.get_or_create(name="Paper Attendance")[0].file
             if not template:
                 result = False
@@ -223,7 +205,7 @@ def school_report_builder_view(request):
                 report = TemplateReport(request.user)
                 report.data['courses'] = courses
                 result = report.pod_save(template)
-            
+
             if result:
                 return result
             else:
@@ -246,7 +228,7 @@ def school_report_builder_view(request):
                     f.write(template.read())
                     f.close()
                     template = tmpfile
-                
+
                 report = TemplateReport(request.user)
                 students=form.get_students(data)
                 cal = Calendar()
@@ -304,13 +286,13 @@ def import_naviance(request):
     msg = mark_safe(msg)
     return render_to_response('sis/generic_form.html', {'form':form, 'msg':msg}, RequestContext(request, {}), )
 
-@user_passes_test(lambda u: u.groups.filter(name="registrar").count() or u.has_perm('sis.reports') or u.is_superuser, login_url='/')   
+@user_passes_test(lambda u: u.groups.filter(name="registrar").count() or u.has_perm('sis.reports') or u.is_superuser, login_url='/')
 def grade_report(request):
     """ Grade related report builder
     """
     form = StudentGradeReportWriterForm()
     mp_form = MarkingPeriodForm()
-    
+
     if request.method == 'POST':
         if 'student_grade' in request.POST:
             form = StudentGradeReportWriterForm(request.POST, request.FILES)
@@ -325,7 +307,7 @@ def grade_report(request):
             form = StudentGradeReportWriterForm(request.POST, request.FILES)
             if form.is_valid():
                 return grade_reports.date_based_gpa_report(request)
-                
+
     form.fields['template'].queryset = Template.objects.filter(Q(report_card=True) | Q(transcript=True))
     return render_to_response('sis/grade_report.html', {'form':form, 'mp_form':mp_form}, RequestContext(request, {}),)
 
@@ -342,7 +324,7 @@ def ajax_include_deleted(request):
     profile.save()
     return HttpResponse('SUCCESS')
 
-@user_passes_test(lambda u: u.has_perm("sis.view_student"), login_url='/')   
+@user_passes_test(lambda u: u.has_perm("sis.view_student"), login_url='/')
 def view_student(request, id=None):
     """ Lookup all student information
     """
@@ -366,14 +348,14 @@ def view_student(request, id=None):
                     return HttpResponseRedirect('/sis/view_student/' + str(student.id))
                 if student == current_student:
                     found = True
-                    
+
     if request.method == 'POST':
         form = StudentLookupForm(request.POST)
         if form.is_valid():
             return HttpResponseRedirect('/sis/view_student/' + str(form.cleaned_data['student'].id))
-            
+
     profile = UserPreference.objects.get_or_create(user=request.user)[0]
-    
+
     if id:
         student = get_object_or_404(Student, pk=id)
     else:
@@ -381,12 +363,12 @@ def view_student(request, id=None):
         return render_to_response('sis/view_student.html', {
             'include_inactive': profile.include_deleted_students,
         }, RequestContext(request, {}),)
-    
+
     today = date.today()
     emergency_contacts = student.emergency_contacts.all()
     siblings = student.siblings.all()
     numbers = student.studentnumber_set.all()
-    
+
     # Schedule
     cal = Calendar()
     try:
@@ -408,13 +390,13 @@ def view_student(request, id=None):
     else:
         schedule_days = None
         periods = None
-    
+
     # Discipline
     if 'ecwsp.discipline' in settings.INSTALLED_APPS:
         disciplines = student.studentdiscipline_set.all()
     else:
         disciplines = None
-    
+
     #### CWSP related
     try:
         clientvisits = student.studentworker.clientvisit_set.all()
@@ -440,7 +422,7 @@ def view_student(request, id=None):
     except:
         supervisors = None
     ########################################################################
-    
+
     #Grades
     years = SchoolYear.objects.filter(markingperiod__course__courseenrollment__user=student).distinct()
     from ecwsp.grades.models import Grade
@@ -457,7 +439,7 @@ def view_student(request, id=None):
                 except:
                     course.grade_html += '<td> </td>'
             course.grade_html += '<td> %s </td>' % (unicode(course.get_final_grade(student)),)
-        
+
         # Attendance
         if 'ecwsp.attendance' in settings.INSTALLED_APPS:
             attendances = student.student_attn.filter(date__range=(year.start_date, year.end_date))
@@ -467,7 +449,7 @@ def view_student(request, id=None):
             year.attendance_absense_with_half = year.attendance_absense + float(attendances.filter(status__half=True).count()) / 2
             year.total = year.get_number_days()
             year.present = year.total - year.attendance_tardy - year.attendance_absense_with_half
-    
+
     #Standard Tests
     from ecwsp.administration.models import Configuration
     if 'ecwsp.standard_test' in settings.INSTALLED_APPS:
@@ -475,7 +457,7 @@ def view_student(request, id=None):
         standard_tests = StandardTestResult.objects.filter(student=student)
     else:
         standard_tests = None
-    
+
     return render_to_response('sis/view_student.html', {
         'date':today,
         'student':student,
@@ -497,7 +479,7 @@ def view_student(request, id=None):
         'tests': standard_tests
     }, RequestContext(request, {}),)
 
-@permission_required('sis.change_student') 
+@permission_required('sis.change_student')
 def increment_year(request):
     subtitle = "You can use this tool to change school years. It will change students year (fresh, soph, etc) and graudate as needed. "\
         "There will be confirmation screen before any changes are made."
@@ -514,11 +496,11 @@ def increment_year(request):
 class StudentViewDashletView(generic.DetailView):
     model = Student
     template_name = 'sis/view_student_dashlet.html'
-    
+
     @method_decorator(permission_required('sis.view_student'))
     def dispatch(self, *args, **kwargs):
         return super(StudentViewDashletView, self).dispatch(*args, **kwargs)
- 
+
 
 @transaction.commit_on_success
 def increment_year_confirm(request, year_id):
@@ -542,7 +524,7 @@ def increment_year_confirm(request, year_id):
                     student.save()
         messages.success(request, 'Successfully incremented student years!')
         return HttpResponseRedirect(reverse('admin:sis_student_changelist'))
-    
+
     old_active_year = SchoolYear.objects.get(active_year = True)
     item_list = ["Change active year from %s to %s" % (old_active_year, year)]
     for student in students:
@@ -560,5 +542,5 @@ def increment_year_confirm(request, year_id):
                     pass
         if row:
             item_list += [mark_safe(row)]
-    
+
     return render_to_response('sis/list_with_confirm.html', {'subtitle': subtitle, 'item_list':item_list, 'msg':msg}, RequestContext(request, {}),)

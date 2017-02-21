@@ -1,21 +1,3 @@
-#   Copyright 2012 Burke Software and Consulting LLC
-#   Author: John Milner <john@tmoj.net>
-#   
-#   This program is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 2 of the License, or
-#   (at your option) any later version.
-#     
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#      
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#   MA 02110-1301, USA.
-
 from ecwsp.benchmark_grade.models import CalculationRule, Aggregate, Item, Mark, Category, AggregateTask, CalculationRulePerCourseCategory
 from ecwsp.schedule.models import MarkingPeriod, Department, Course
 from ecwsp.grades.models import Grade
@@ -264,7 +246,7 @@ def gradebook_recalculate_on_item_change(item, students=None, old_item=None):
         assignment_type - does not affect calculations
         benchmark - does not affect calculations
     '''
-    categories = set((item.category,)) 
+    categories = set((item.category,))
     marking_periods = set((item.marking_period,))
     renormalization_required = False
     parting_calculation_required = False
@@ -453,7 +435,7 @@ def benchmark_calculate_grade_for_courses(student, courses, marking_period=None,
 
         if mp_denom > 0:
             mp_numer *= 4 # HARD CODED 4.0 SCALE!!!
-            student_numer += mp_numer / mp_denom * mp_denom_before_categories 
+            student_numer += mp_numer / mp_denom * mp_denom_before_categories
             student_denom += mp_denom_before_categories
             mp_denom = mp_denom_before_categories # in this version, mp_denom isn't used again, but this may save someone pain in the future.
 
@@ -466,7 +448,7 @@ def benchmark_calculate_grade_for_courses(student, courses, marking_period=None,
             student_denom += credits
         except:
             logging.warning('Legacy course grade calculation failed for student {}, course {}, marking_period {}, date_report {}'.format(student, course, marking_period, date_report), exc_info=True)
-            
+
     if student_denom > 0:
         return Decimal(student_numer / student_denom).quantize(Decimal(10) ** (-1 * DECIMAL_PLACES), ROUND_HALF_UP)
     else:

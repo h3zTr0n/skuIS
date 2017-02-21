@@ -1,19 +1,3 @@
-#   Copyright 2011 Burke Software and Consulting LLC
-#   Author David M Burke <david@burkesoftware.com>
-#   
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
-
 from django.utils.html import strip_tags
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, Sum
@@ -32,7 +16,7 @@ from openpyxl.cell import get_column_letter
 class ReportManager(object):
     def download_results(self, test):
         """ Create basic xls report for OMR. Includes summary and details """
-        
+
         # Summary sheet
         data = [[test.name]]
         data.append(["Points Possible:", test.points_possible])
@@ -44,7 +28,7 @@ class ReportManager(object):
         for ti in test.testinstance_set.annotate(earned=Sum('answerinstance__points_earned')):
             data.append([ti.student, ti.earned, "=B%s / $B$2" % i])
             i += 1
-        
+
         report = XlReport(file_name="OMR Report")
         report.add_sheet(data, title="Summary", auto_width=True)
         # Detail sheets
@@ -61,7 +45,7 @@ class ReportManager(object):
         data_points.append(row_points)
         data_answers.append(row_answers)
         data_abc.append(row_abc)
-        
+
         for test_instance in test.testinstance_set.all():
             row_points = []
             row_answers = []
@@ -89,11 +73,11 @@ class ReportManager(object):
             data_points.append(row_points)
             data_answers.append(row_answers)
             data_abc.append(row_abc)
-        
+
         report.add_sheet(data_points, title="Detail Points", auto_width=True)
         report.add_sheet(data_answers, title="Detail Answers", auto_width=True)
         report.add_sheet(data_abc, title="Answer Sheet", auto_width=True)
-        
+
         # Benchmark sheet
         data = []
         row = ['Benchmark']
@@ -119,7 +103,7 @@ class ReportManager(object):
             i += 1
             data.append(row)
         report.add_sheet(data, title="Benchmark", auto_width=True)
-        
+
         data = [['Benchmark', 'Name', 'Earned', 'Possible', 'Percent']]
         i = 2
         for benchmark in benchmarks:
@@ -135,19 +119,19 @@ class ReportManager(object):
             row += ['=C{0}/D{0}'.format(str(i))]
             data += [row]
         report.add_sheet(data, title="Benchmarks for class", auto_width=True)
-        
+
         return report.as_download()
-        
+
     def download_student_results(self, test, format, template):
         """ Make appy based report showing results for each student """
         report = TemplateReport()
         report.file_format = format
         test_instances = test.testinstance_set.all()
         benchmarks = Benchmark.objects.filter(question__test=test)
-        
+
         for benchmark in benchmarks:
             benchmark.points_possible = test.question_set.filter(benchmarks=benchmark).aggregate(Sum('point_value'))['point_value__sum']
-        
+
         for test_instance in test_instances:
             benchmark_instances = []
             for benchmark in benchmarks:
@@ -157,18 +141,18 @@ class ReportManager(object):
                 benchmark_instance.points_earned = test_instance.answerinstance_set.filter(question__benchmarks=benchmark).aggregate(Sum('points_earned'))['points_earned__sum']
                 benchmark_instances.append(benchmark_instance)
             test_instance.benchmarks = benchmark_instances
-        
+
             test_instance.incorrects = test_instance.answerinstance_set.filter(points_earned__lt=F('points_possible'))
             for incorrect in test_instance.incorrects:
                 try:
                     incorrect.right_answer = incorrect.question.answer_set.order_by('point_value').reverse()[0]
                 except:
                     incorrect.right_answer = "No correct answer"
-            
+
         report.data['test'] = test
         report.data['tests'] = test_instances
-        
+
         report.filename = 'Student Results for ' + unicode(test)
-        return report.pod_save(template)  
+        return report.pod_save(template)
 
 report = ReportManager()

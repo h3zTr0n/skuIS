@@ -1,21 +1,3 @@
-#   Copyright 2013 Burke Software and Consulting LLC
-#   Author: John Milner <john@tmoj.net>
-#   
-#   This program is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 2 of the License, or
-#   (at your option) any later version.
-#     
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#      
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#   MA 02110-1301, USA.
-
 from django.db import models
 from django.db.models import Avg, Count, Max, Min, StdDev, Sum, Variance
 #from django.contrib.localflavor.us.models import *
@@ -178,7 +160,7 @@ class AssignmentType(models.Model):
     name = models.CharField(max_length=255)
     def __unicode__(self):
         return self.name
-    
+
 class Item(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True, null=True)
@@ -241,7 +223,7 @@ class Mark(models.Model):
             raise ValidationError('Mark does not conform to fixed granularity of {}.'.format(self.item.category.fixed_granularity))
     def __unicode__(self):
         return unicode(self.mark) + u' - ' + unicode(self.student) + u'; ' + unicode(self.item)
-    
+
 class Aggregate(models.Model):
     name = models.CharField(max_length=255)
     manual_mark = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
@@ -421,7 +403,7 @@ class Aggregate(models.Model):
             return Decimal(sum(mark) / total_points_possible) * self.points_possible, display_as
         else:
             return None, display_as
-        
+
     def __unicode__(self):
         return self.name # not useful
 

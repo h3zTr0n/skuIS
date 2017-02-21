@@ -1,21 +1,3 @@
-#       Copyright 2012 Burke Software and Consulting LLC
-#       Author David M Burke <david@burkesoftware.com>
-#       
-#       This program is free software; you can redistribute it and/or modify
-#       it under the terms of the GNU General Public License as published by
-#       the Free Software Foundation; either version 3 of the License, or
-#       (at your option) any later version.
-#       
-#       This program is distributed in the hope that it will be useful,
-#       but WITHOUT ANY WARRANTY; without even the implied warranty of
-#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#       GNU General Public License for more details.
-#       
-#       You should have received a copy of the GNU General Public License
-#       along with this program; if not, write to the Free Software
-#       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#       MA 02110-1301, USA.
-
 from django import forms
 from django.contrib.admin import widgets as adminwidgets
 from django.conf import settings
@@ -36,8 +18,8 @@ class StudentAttendanceForm(forms.ModelForm):
             'notes': forms.TextInput(attrs={'tabindex':"-1",}),
         }
     status = forms.ModelChoiceField(widget=forms.Select(attrs={'class':'status',}), queryset=AttendanceStatus.objects.filter(teacher_selectable=True))
-    
-    
+
+
 class StudentMultpleAttendanceForm(forms.ModelForm):
     """ Form accepts multiple students """
     class Meta:
@@ -48,8 +30,8 @@ class StudentMultpleAttendanceForm(forms.ModelForm):
         }
         fields = ('date', 'status', 'time', 'notes', 'private_notes')
     student = AutoCompleteSelectMultipleField('student')
-    
-    
+
+
 class CourseAttendanceForm(forms.Form):
     student = forms.ModelChoiceField(queryset=Student.objects.all(), widget=forms.HiddenInput())
     status = forms.ModelChoiceField(
@@ -59,14 +41,14 @@ class CourseAttendanceForm(forms.Form):
     time_in = forms.TimeField(required=False, widget=adminwidgets.AdminTimeWidget(attrs={'tabindex':"-1"}))
     notes = forms.CharField(required=False, widget=forms.TextInput(attrs={'tabindex':"-1"}))
 
-    
+
 class AttendanceReportForm(TimeBasedForm):
     filter_status = forms.ModelChoiceField(required=False, queryset=AttendanceStatus.objects.all())
     filter_count =forms.IntegerField(initial=0, help_text="Minimal number of above needed to show in report")
     filter_total_absences = forms.IntegerField(initial=0, help_text="Minimal number of total absenses needed to show in report")
     filter_total_tardies = forms.IntegerField(initial=0, help_text="Minimal number of total tardies needed to show in report")
-    
-    
+
+
 class AttendanceViewForm(forms.Form):
     all_years = forms.BooleanField(required=False, help_text="If check report will contain all student records. Otherwise it will only show current year.")
     order_by = forms.ChoiceField(initial=0, choices=(('Date','Date'),('Status','Status'),))

@@ -1,21 +1,3 @@
-#   Copyright 2012 Burke Software and Consulting LLC
-#   Author David M Burke <david@burkesoftware.com>
-#   
-#   This program is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 3 of the License, or
-#   (at your option) any later version.
-#     
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#      
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#   MA 02110-1301, USA.
-
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.db import models
@@ -36,10 +18,10 @@ class AttendanceStatus(models.Model):
     absent = models.BooleanField(help_text="Some statistics need to add various types of absent statuses, such as the number in parathesis in daily attendance")
     tardy = models.BooleanField(help_text="Some statistics need to add various types of tardy statuses, such as the number in parathesis in daily attendance")
     half = models.BooleanField(help_text="Half attendance when counting. DO NOT check off absent otherwise it will double count!")
-    
+
     class Meta:
         verbose_name_plural = 'Attendance Statuses'
-    
+
     def __unicode__(self):
         return unicode(self.name)
 
@@ -58,7 +40,7 @@ class CourseAttendance(models.Model):
     notes = models.CharField(max_length=500, blank=True)
     def __unicode__(self):
         return unicode(self.student) + " " + unicode(self.date) + " " + unicode(self.status)
-    
+
     def course_period(self):
         if self.course.coursemeet_set.filter(day=self.date.isoweekday()):
             return self.course.coursemeet_set.filter(day=self.date.isoweekday())[0].period
@@ -71,21 +53,21 @@ class StudentAttendance(models.Model):
     time = models.TimeField(blank=True,null=True)
     notes = models.CharField(max_length=500, blank=True)
     private_notes = models.CharField(max_length=500, blank=True)
-    
+
     class Meta:
         unique_together = (("student", "date", 'status'),)
         ordering = ('-date', 'student',)
         permissions = (
             ('take_studentattendance', 'Take own student attendance'),
         )
-    
+
     def __unicode__(self):
         return unicode(self.student) + " " + unicode(self.date) + " " + unicode(self.status)
-    
+
     @property
     def edit(self):
         return "Edit"
-    
+
     def save(self, *args, **kwargs):
         """Don't save Present """
         present, created = AttendanceStatus.objects.get_or_create(name="Present")
@@ -118,7 +100,7 @@ def post_save_attendance_handler(sender, instance, **kwargs):
                     attn.save()
         except:
             logging.error('Attendance trigger error', exc_info=True)
-        
+
 post_save.connect(post_save_attendance_handler, sender=StudentAttendance)
 
 
@@ -136,13 +118,13 @@ class AttendanceDailyStat(models.Model):
     present = models.IntegerField()
     absent = models.IntegerField()
     tardy = models.IntegerField()
-    
+
     def set_all(self):
         """ Records fields and saves """
         all_students = Student.objects.filter(inactive=False).count()
         absents = StudentAttendance.objects.filter(date=date.today(), status__absent=True).count()
         tardies = StudentAttendance.objects.filter(date=date.today(), status__tardy=True).count()
-        
+
         self.present = all_students - absents
         self.absent = absents
         self.tardy = tardies

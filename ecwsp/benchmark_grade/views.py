@@ -1,21 +1,3 @@
-#   Copyright 2011 Burke Software and Consulting LLC
-#   Author: John Milner <john@tmoj.net>
-#
-#   This program is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 2 of the License, or
-#   (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#   MA 02110-1301, USA.
-
 from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.admin.views.decorators import staff_member_required
@@ -29,7 +11,7 @@ from django.core.urlresolvers import reverse
 from ecwsp.sis.models import SchoolYear, Student, Faculty
 #from ecwsp.sis.uno_report import *
 from ecwsp.schedule.models import Course, MarkingPeriod
-#from ecwsp.schedule.forms import 
+#from ecwsp.schedule.forms import
 from ecwsp.grades.forms import GradeUpload
 #from ecwsp.administration.models import *
 from ecwsp.benchmark_grade.models import Category, Mark, Aggregate, Item, Demonstration, CalculationRule, AggregateTask
@@ -112,7 +94,7 @@ def gradebook(request, course_id):
                     except TypeError:
                         # not everything has a len
                         pass
-                    if filter_key == 'cohort': 
+                    if filter_key == 'cohort':
                         students = students.filter(cohorts=filter_value)
                         temporary_aggregate = True
                     if filter_key == 'marking_period':
@@ -145,17 +127,17 @@ def gradebook(request, course_id):
         else:
             filter_form = GradebookFilterForm()
         filter_form.update_querysets(course)
-        
+
     # make a note of any aggregates pending recalculation
     pending_aggregate_pks = Aggregate.objects.filter(course=course, aggregatetask__in=AggregateTask.objects.all()).values_list('pk', flat=True).distinct()
-    
+
     # Freeze these now in case someone else gets in here!
     # TODO: something that actually works. all() does not evaluate a QuerySet.
     # https://docs.djangoproject.com/en/dev/ref/models/querysets/#when-querysets-are-evaluated
     items = items.order_by('id').all()
     # whoa, super roll of the dice. is Item.demonstration_set really guaranteed to be ordered by id?
     # precarious; sorting must match items (and demonstrations!) exactly
-    marks = Mark.objects.filter(item__in=items).order_by('item__id', 'demonstration__id').all() 
+    marks = Mark.objects.filter(item__in=items).order_by('item__id', 'demonstration__id').all()
     items_count = items.filter(demonstration=None).count() + Demonstration.objects.filter(item__in=items).count()
     for student in students:
         student_marks = marks.filter(student=student).select_related('item__category_id')
@@ -176,10 +158,10 @@ def gradebook(request, course_id):
                 pass
             else:
                 raise Exception('Multiple marks per student per item.')
-        
+
         for mark in student_marks:
             mark.category_id = mark.item.category_id
-        
+
         student.marks = student_marks
         student.average, student.average_pk = gradebook_get_average_and_pk(student, course, None, None, None)
         if filtered:
@@ -269,7 +251,7 @@ def ajax_get_item_form(request, course_id, item_id=None):
     course = get_object_or_404(Course, pk=course_id)
     item = None
     lists = None
-    
+
     if request.POST:
         if item_id:
             # modifying an existing item
@@ -314,7 +296,7 @@ def ajax_get_item_form(request, course_id, item_id=None):
             # message handler.
             messages.success(request, '%s saved' % (item,))
             return HttpResponse('SUCCESS')
-        
+
     else:
         if item_id:
             item = get_object_or_404(Item, pk=item_id)
@@ -330,7 +312,7 @@ def ajax_get_item_form(request, course_id, item_id=None):
                 form = ItemForm(initial={'course': course, 'marking_period':active_mps[0]}, prefix="item")
             else:
                 form = ItemForm(initial={'course': course}, prefix="item")
-    
+
     form.fields['marking_period'].queryset = course.marking_period.all()
     form.fields['category'].queryset = Category.objects.filter(display_in_gradebook=True)
     form.fields['benchmark'].queryset = Benchmark.objects.filter()
@@ -408,7 +390,7 @@ def ajax_get_demonstration_form(request, course_id, demonstration_id=None):
     don't appear until reload '''
     course = get_object_or_404(Course, pk=course_id)
     lists = None
-    
+
     if request.POST:
         if demonstration_id:
             # modifying an existing demonstration
@@ -437,7 +419,7 @@ def ajax_get_demonstration_form(request, course_id, demonstration_id=None):
             # message handler.
             messages.success(request, '%s saved' % (demonstration,))
             return HttpResponse('SUCCESS')
-        
+
     else:
         if demonstration_id:
             demonstration = get_object_or_404(Demonstration, pk=demonstration_id)
@@ -449,7 +431,7 @@ def ajax_get_demonstration_form(request, course_id, demonstration_id=None):
                 lists = ({'heading':'Students Missing This Demonstration', 'items':students_missing},)
         else:
             form = DemonstrationForm(initial={'course': course}, prefix="demonstration")
-    
+
     form.fields['item'].queryset = Item.objects.filter(course=course,
                                                        category__display_in_gradebook=True, category__allow_multiple_demonstrations=True)
 
@@ -521,7 +503,7 @@ def ajax_save_grade(request):
         mark_id = request.POST['mark_id'].strip()
         value = request.POST['value'].strip()
         try: mark = Mark.objects.get(id=mark_id)
-        except Mark.DoesNotExist: return HttpResponse('NO MARK WITH ID ' + mark_id, status=404) 
+        except Mark.DoesNotExist: return HttpResponse('NO MARK WITH ID ' + mark_id, status=404)
         if not request.user.is_superuser and not request.user.groups.filter(name='registrar').count() \
             and request.user.username != mark.item.course.teacher.username \
             and not mark.item.course.secondary_teachers.filter(username=request.user.username).count():
@@ -549,10 +531,10 @@ def ajax_save_grade(request):
         affected_agg_pks = [x.pk for x in gradebook_recalculate_on_mark_change(mark)]
         # just the whole course average for now
         # TODO: update filtered average
-        #average = gradebook_get_average(mark.student, mark.item.course, None, None, None) 
+        #average = gradebook_get_average(mark.student, mark.item.course, None, None, None)
         return HttpResponse(json.dumps({'success': 'SUCCESS', 'value': value, 'average': 'Please clear your browser\'s cache.', 'affected_aggregates': affected_agg_pks}))
     else:
-        return HttpResponse('POST DATA INCOMPLETE', status=400) 
+        return HttpResponse('POST DATA INCOMPLETE', status=400)
 
 @staff_member_required
 def ajax_task_poll(request, course_pk=None):
@@ -603,7 +585,7 @@ def student_report(request, student_pk=None, course_pk=None, marking_period_pk=N
             elif family_available_students.count():
                 student = family_available_students[0]
                 authorized = True
-    
+
     # did all that make us comfortable with proceeding?
     if not authorized:
         error_message = 'Sorry, you are not authorized to see grades for this student. Please contact the school registrar.'
@@ -682,7 +664,7 @@ def student_report(request, student_pk=None, course_pk=None, marking_period_pk=N
                 category.item_groups = {}
                 for item_name_tuple in item_names:
                     item_name = item_name_tuple[0]
-                    category.item_groups[item_name] = category_items.filter(name=item_name).distinct() 
+                    category.item_groups[item_name] = category_items.filter(name=item_name).distinct()
                 if specific_items:
                     # get a disposable average for these specific items
                     category.average = gradebook_get_average(student, course, category, mp, category_items)

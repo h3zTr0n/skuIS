@@ -1,18 +1,18 @@
 #       settings.py
-#       
+#
 #       Copyright 2010-2011 Burke Software and Consulting LLC
 #       Author David M Burke <david@burkesoftware.com>
-#       
+#
 #       This program is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published by
 #       the Free Software Foundation; either version 2 of the License, or
 #       (at your option) any later version.
-#       
+#
 #       This program is distributed in the hope that it will be useful,
 #       but WITHOUT ANY WARRANTY; without even the implied warranty of
 #       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #       GNU General Public License for more details.
-#       
+#
 #       You should have received a copy of the GNU General Public License
 #       along with this program; if not, write to the Free Software
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -39,23 +39,23 @@ CKEDITOR_UPLOAD_PATH = root('media/uploads')
 # Django stuff
 LOGIN_REDIRECT_URL = "/"
 ADMINS = (
-    ('Admin', 'someone@example.com'),
+    ('Alison', 'alison.mukoma@yahoo.com'),
 )
 MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'sword',
-        'USER': 'sword',
-        'PASSWORD': '1234',
-        'HOST': 'localhost', 
+        'NAME': 'school',
+        'USER': 'root',
+        'PASSWORD': 'M2kr00t',
+        'HOST': 'localhost',
     },
     'mysql': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'sword',
-        'USER': 'sword',
-        'PASSWORD': '1234',
-        'HOST': 'localhost', 
+        'NAME': 'school',
+        'USER': 'root',
+        'PASSWORD': 'M2kr00t',
+        'HOST': 'localhost',
     }
 }
 EMAIL_HOST = 'daphne.cristoreyny.org'
@@ -100,7 +100,7 @@ ROOT_URLCONF = 'django_sis.urls'
 WSGI_APPLICATION = 'ecwsp.wsgi.application'
 
 """ Optional these you can copy into settings_local
-Required apps are towards the bottom of this file (which get added after local 
+Required apps are towards the bottom of this file (which get added after local
 settings) """
 INSTALLED_APPS = (
     #'ecwsp.naviance_sso',
@@ -177,8 +177,8 @@ elif LDAP:
     AUTHENTICATION_BACKENDS = ('ldap_groups.accounts.backends.ActiveDirectoryGroupMembershipSSLBackend','django.contrib.auth.backends.ModelBackend',)
 else:
     AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend',)
-    
-    
+
+
 #Google Apps
 GAPPS = False
 if GAPPS:
@@ -420,7 +420,7 @@ INSTALLED_APPS += (
     'reversion',
     'south',
     'djcelery',
-    'django.contrib.admin',    
+    'django.contrib.admin',
     'django.contrib.staticfiles',
     'django.contrib.auth',
     'django.contrib.contenttypes',

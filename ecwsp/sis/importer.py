@@ -1,22 +1,4 @@
 #       import.py
-#       
-#       Copyright 2010-2012 Burke Software and Consulting
-#       Author David M Burke <david@burkesoftware.com>
-#       
-#       This program is free software; you can redistribute it and/or modify
-#       it under the terms of the GNU General Public License as published by
-#       the Free Software Foundation; either version 3 of the License, or
-#       (at your option) any later version.
-#       
-#       This program is distributed in the hope that it will be useful,
-#       but WITHOUT ANY WARRANTY; without even the implied warranty of
-#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#       GNU General Public License for more details.
-#       
-#       You should have received a copy of the GNU General Public License
-#       along with this program; if not, write to the Free Software
-#       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#       MA 02110-1301, USA.
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.base import ContentFile
@@ -61,7 +43,7 @@ class Importer:
             self.error_titles = {}
             self.errors = 0
             self.user = user
-    
+
     def do_mysql_backup(self, database='default'):
         args = []
         database = settings.DATABASES[database]
@@ -83,7 +65,7 @@ class Importer:
         else:
             mysql_as_string = subprocess.Popen('mysqldump %s' % (' '.join(args),),shell=True).communicate()[0]
         return ContentFile(mysql_as_string)
-        
+
     def make_log_entry(self, user_note=""):
         self.log = ImportLog(user=self.user, user_note=user_note, import_file=self.file)
         file_name = datetime.datetime.now().strftime("%Y%m%d%H%M") + ".sql"
@@ -93,7 +75,7 @@ class Importer:
         # Clean up old log files
         for import_log in ImportLog.objects.filter(date__lt=datetime.datetime.now() - datetime.timedelta(60)):
             import_log.delete()
-        
+
     def handle_error(self, row, colname, exc, name):
         """ Add error infomation to exception list and error_date which will be
         transfered to html and a xls file. Also print to stderr. """
@@ -106,7 +88,7 @@ class Importer:
             value_row += [error]
             self.error_data[name] += [value_row]
             self.errors += 1
-    
+
     def sanitize_item(self, name, value):
         """ Checks to make sure column and cell have data, if not ignore them
         Returns true is valid data """
@@ -117,7 +99,7 @@ class Importer:
                 value = str(value).rstrip('0').rstrip('.')
             return True, name, value
         return False, name, value
-    
+
     def gen_username(self, fname, lname):
         """Generate a unique username for a ***User*** (not MdlUser) based on first and last name
         Try first the first letter of the first name plus the last name
@@ -144,7 +126,7 @@ class Importer:
                 number += 1
                 username = unicode(fname[:i]) + unicode(lname) + unicode(number)
         return unicode.lower(username)
-    
+
     def import_number(self, value):
         phonePattern = re.compile(r'''
                     # don't match beginning of string, number can start anywhere
@@ -161,7 +143,7 @@ class Importer:
         if ext == "0000":
             ext = ""
         return a + "-" + b + "-" + c, ext
-    
+
     def convert_date(self, value):
         """Tries to convert various ways of storing a date to a python date"""
         try:
@@ -181,12 +163,12 @@ class Importer:
             return datetime.datetime.strptime(str(date_split[0] + "-" +date_split[1]), "%Y-%m")
         except: pass
         return None
-    
+
     def get_student(self, items, allow_none=False, try_secondary=False):
         """ Lookup a student based on id, unique id, username, or ssn
         items: name and value from the imported data
         allow_none: Allow not finding a student. If False an exceptions
-        try_secondary: 
+        try_secondary:
         is raised if the student isn't found. default False"""
         for (name, value) in items:
             is_ok, name, value = self.sanitize_item(name, value)
@@ -209,7 +191,7 @@ class Importer:
                     ssn = str(value).translate(None, '- _') # Because student clearing house likes stray _
                     ssn = ssn[:3] + '-' + ssn[3:5] + '-' + ssn[-4:] # xxx-xx-xxxx
                     return Student.objects.get(ssn=ssn)
-        
+
         # No ID....try secondary keys.
         if try_secondary:
             fname = None
@@ -236,10 +218,10 @@ class Importer:
                         return Student.objects.get(fname=fname,lname=lname,address=address)
                 if Student.objects.filter(fname=fname,lname=lname).count() == 1:
                     return Student.objects.get(fname=fname,lname=lname)
-        
+
         if not allow_none:
             raise Exception("Could not find student, check unique id, username, or id")
-    
+
     def convert_day(self, value):
         """ Converts day of week to ISO day of week number
         Ex: Monday returns 1"""
@@ -252,7 +234,7 @@ class Importer:
         elif value == "saturday" or value == "sat": return 6
         elif value == "sunday" or value == "sun": return 7
         else: return value
-    
+
     def convert_time(self, value):
         """Tries to convert various ways of storing a date to a python time
         Includes excel date format"""
@@ -262,7 +244,7 @@ class Importer:
         except:
             pdate = time(*(xlrd.xldate_as_tuple(float(value), 0)[3:]))
         return pdate
-    
+
     def determine_truth(self, value):
         value = unicode(value)
         value = unicode.lower(value)
@@ -270,31 +252,31 @@ class Importer:
             return True
         else:
             return False
-    
+
     def log_and_commit(self, object, inserted=None, updated=None, addition=True):
         if addition:
             LogEntry.objects.log_action(
-                user_id         = self.user.pk, 
+                user_id         = self.user.pk,
                 content_type_id = ContentType.objects.get_for_model(object).pk,
                 object_id       = object.pk,
-                object_repr     = unicode(object), 
+                object_repr     = unicode(object),
                 action_flag     = ADDITION
             )
             if inserted != None:
                 inserted += 1
         else:
             LogEntry.objects.log_action(
-                user_id         = self.user.pk, 
+                user_id         = self.user.pk,
                 content_type_id = ContentType.objects.get_for_model(object).pk,
                 object_id       = object.pk,
-                object_repr     = unicode(object), 
+                object_repr     = unicode(object),
                 action_flag     = CHANGE
             )
             if updated != None:
                 updated += 1
         transaction.commit()
         return inserted, updated
-    
+
     def import_prep(self, sheet):
         x = 0
         header = sheet.row(x)
@@ -308,7 +290,7 @@ class Importer:
         self.error_titles[sheet.name] = [header_values]
         self.error_data[sheet.name] = []
         return (x, header, inserted, updated)
-    
+
     def get_sheet_by_case_insensitive_name(self, name):
         """ Use xlrd to get a sheet, but ignore case! """
         i = 0
@@ -316,14 +298,14 @@ class Importer:
             if sheet_name.lower() == name.lower():
                 return self.book.sheet_by_index(i)
             i += 1
-    
+
     def magic_import_everything(self):
         """Import a workbook using sheet names to determine what to import"""
         self.make_log_entry()
         inserted = 0
         updated = 0
         msg = ""
-        
+
         sheet = self.get_sheet_by_case_insensitive_name("students")
         if sheet:
             inserted, updated = self.import_students(sheet)
@@ -416,7 +398,7 @@ class Importer:
         if sheet:
             inserted, updated = self.import_alumni_note(sheet)
             msg += "%s alumni note entries inserted,<br/>" % (inserted,)
-            
+
         sheet = self.get_sheet_by_case_insensitive_name("alumni email")
         if sheet:
             inserted, updated = self.import_alumni_email(sheet)
@@ -425,7 +407,7 @@ class Importer:
         if sheet:
             inserted, updated = self.import_alumni_number(sheet)
             msg += "%s alumni numbers inserted,<br/>" % (inserted,)
-            
+
         sheet = self.get_sheet_by_case_insensitive_name("college enrollment")
         if sheet:
             inserted, updated = self.import_college_enrollment(sheet)
@@ -456,12 +438,12 @@ class Importer:
         if sheet:
             inserted, updated = self.import_family_access(sheet)
             msg += "%s family access records inserted, %s family access records updated <br/>" % (inserted, updated)
-        
+
         if msg == "":
             msg = "No files found. Check if sheets are named correctly. "
-        
+
         msg += unicode(self.errors) + " error(s). "
-        
+
         filename = 'import_error.xlsx'
         if len(self.error_data):
             self.log.errors = True
@@ -477,7 +459,7 @@ class Importer:
             else:
                 filename = None
         return msg, filename
-    
+
     def import_just_standard_test(self, test=None):
         inserted = 0
         msg = ""
@@ -486,12 +468,12 @@ class Importer:
             inserted = self.import_standard_test(sheet, test)
             msg += "%s standard tests inserted <br/>" % (inserted)
         except: pass
-        
+
         if msg == "":
             msg = "No files found. Check if sheets are named correctly. "
-        
+
         msg += unicode(self.errors) + " error(s). "
-        
+
         filename = 'import_error.xls'
         if len(self.error_data):
             report = XlReport()
@@ -505,7 +487,7 @@ class Importer:
             else:
                 filename = None
         return msg, filename
-    
+
     def import_benchmarks(self, sheet, test=None):
         """Import Standardized tests. Does not allow updates.
         test: if the test named is already known. """
@@ -571,7 +553,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     def import_standard_test(self, sheet, known_test=None):
         """Import Standardized tests. Does not allow updates.
         test: if the test name is already known. """
@@ -622,7 +604,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted
-    
+
     def import_alumni_note(self, sheet):
         from ecwsp.alumni.models import Alumni, AlumniNote, AlumniNoteCategory
         x, header, inserted, updated = self.import_prep(sheet)
@@ -661,7 +643,7 @@ class Importer:
                     if created:
                         self.log_and_commit(note, addition=created)
                         inserted += 1
-                            
+
                 except:
                     if hasattr(sheet, 'name'):
                         self.handle_error(row, name, sys.exc_info(), sheet.name)
@@ -669,7 +651,7 @@ class Importer:
                         self.handle_error(row, name, sys.exc_info(), "Unknown")
             x += 1
         return inserted, updated
-    
+
     def import_alumni_email(self, sheet):
         from ecwsp.alumni.models import Alumni, AlumniEmail
         x, header, inserted, updated = self.import_prep(sheet)
@@ -702,7 +684,7 @@ class Importer:
                     if created:
                         self.log_and_commit(note, addition=created)
                         inserted += 1
-                            
+
                 except:
                     if hasattr(sheet, 'name'):
                         self.handle_error(row, name, sys.exc_info(), sheet.name)
@@ -710,8 +692,8 @@ class Importer:
                         self.handle_error(row, name, sys.exc_info(), "Unknown")
             x += 1
         return inserted, updated
-    
-    
+
+
     def import_alumni_number(self, sheet):
         from ecwsp.alumni.models import Alumni, AlumniPhoneNumber
         x, header, inserted, updated = self.import_prep(sheet)
@@ -744,7 +726,7 @@ class Importer:
                     if created:
                         self.log_and_commit(note, addition=created)
                         inserted += 1
-                            
+
                 except:
                     if hasattr(sheet, 'name'):
                         self.handle_error(row, name, sys.exc_info(), sheet.name)
@@ -752,8 +734,8 @@ class Importer:
                         self.handle_error(row, name, sys.exc_info(), "Unknown")
             x += 1
         return inserted, updated
-    
-    
+
+
     def import_college_enrollment(self, sheet):
         from ecwsp.alumni.models import Alumni, College, CollegeEnrollment
         x, header, inserted, updated = self.import_prep(sheet)
@@ -807,7 +789,7 @@ class Importer:
                                 major = value
                             elif name in ['record_found', 'record_found_y/n']:
                                 record_found = self.determine_truth(value)
-                                
+
                     if record_found:
                         # First get or create college
                         college, c_created = College.objects.get_or_create(code=code)
@@ -831,7 +813,7 @@ class Importer:
                             model.graduation_date = graduation_date
                             model.degree_title = degree_title
                             model.major = major
-                        
+
                             model.full_clean()
                             model.save()
                             self.log_and_commit(model, addition=created)
@@ -865,7 +847,7 @@ class Importer:
                         self.handle_error(row, name, sys.exc_info(), "Unknown")
             x += 1
         return inserted, updated
-    
+
     def import_cohort(self, sheet):
         """Import cohorts. Does not allow updates. """
         x, header, inserted, updated = self.import_prep(sheet)
@@ -879,7 +861,7 @@ class Importer:
                     model = None
                     student = model.student = self.get_student(items)
                     student_cohort = None
-                    
+
                     for (name, value) in items:
                         is_ok, name, value = self.sanitize_item(name, value)
                         if is_ok:
@@ -902,7 +884,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted
-    
+
     #@transaction.commit_manually
     def import_course_enrollment(self, sheet):
         """Import course enrollments. Does not allow updates. """
@@ -943,7 +925,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted
-    
+
     #@transaction.commit_manually
     def import_faculty(self, sheet):
         x, header, inserted, updated = self.import_prep(sheet)
@@ -973,12 +955,12 @@ class Importer:
                         inserted += 1
                     else:
                         self.log_and_commit(model, addition=False)
-                        updated += 1 
+                        updated += 1
                 except:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     #@transaction.commit_manually
     def import_grades_comment(self, sheet):
         x, header, inserted, updated = self.import_prep(sheet)
@@ -1009,7 +991,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     def import_grades_admin(self, sheet):
         x, header, inserted, updated = self.import_prep(sheet)
         while x < sheet.nrows:
@@ -1064,7 +1046,7 @@ class Importer:
                     self.handle_error(row, header, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     #@transaction\.commit_manually
     def import_course(self, sheet):
         """Import Courses. Does allow updates. """
@@ -1124,7 +1106,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     #@transaction\.commit_manually
     def import_course_meet(self, sheet):
         x, header, inserted, updated = self.import_prep(sheet)
@@ -1165,7 +1147,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-                
+
     #@transaction\.commit_manually
     def import_period(self, sheet):
         """Import periods. Does not allow updates. """
@@ -1199,7 +1181,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     #@transaction\.commit_manually
     def import_days_off(self, sheet):
         """Import days off for a marking period. Does not allow updates. """
@@ -1227,7 +1209,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted
-    
+
     #@transaction\.commit_manually
     def import_mp(self, sheet):
         """Import marking periods. Does not allow updates. """
@@ -1282,7 +1264,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted
-    
+
     #@transaction\.commit_manually
     def import_year(self, sheet):
         """Import school year. Does not allow updates. """
@@ -1315,10 +1297,10 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted
-    
+
     #@transaction\.commit_manually
     def import_discipline(self, sheet):
-        """Import discipline linking them to each a student. Does not allow updates. 
+        """Import discipline linking them to each a student. Does not allow updates.
         If a infraction or action doesn't already exist, it is created"""
         x, header, inserted, updated = self.import_prep(sheet)
         while x < sheet.nrows:
@@ -1342,7 +1324,7 @@ class Importer:
                             elif name == "infraction":
                                 infr, created = PresetComment.objects.get_or_create(comment__iexact=value)
                                 if created:
-                                    infr.comment = value 
+                                    infr.comment = value
                                     infr.save()
                                 model.infraction = infr
                             elif name == "comments":
@@ -1353,7 +1335,7 @@ class Importer:
                                 model.save()
                                 action_instance = DisciplineActionInstance(action=action, student_discipline=model)
                             elif name == "action quantity":
-                                action_instance.quantity = value       
+                                action_instance.quantity = value
                     model.full_clean()
                     model.save()
                     model.students.add(student)
@@ -1364,10 +1346,10 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted
-    
+
     #@transaction\.commit_manually
     def import_attendance(self, sheet):
-        """Import attendance linking them to each a student. Does not allow updates. 
+        """Import attendance linking them to each a student. Does not allow updates.
         If a status doesn't already exist, it is created"""
         x, header, inserted, updated = self.import_prep(sheet)
         while x < sheet.nrows:
@@ -1387,7 +1369,7 @@ class Importer:
                                model.date = self.convert_date(value)
                             elif name == "status":
                                 status, created = AttendanceStatus.objects.get_or_create(name=value)
-                                if created: 
+                                if created:
                                     status.name = unicode(value)
                                     status.save()
                                 model.status = status
@@ -1403,11 +1385,11 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted
-    
+
     #@transaction\.commit_manually
     def import_emergency_contacts(self, sheet):
         """Import emergency contacts. Link to student by either username or
-        unique id. Will attempt to lookup duplicates and update instead of 
+        unique id. Will attempt to lookup duplicates and update instead of
         create by using get_or_create on
         student and fname and lname and relationship"""
         x, header, inserted, updated = self.import_prep(sheet)
@@ -1435,7 +1417,7 @@ class Importer:
                     primary = False
                     applicant = None
                     student = self.get_student(items, allow_none=True)
-                    
+
                     for (name, value) in items:
                         is_ok, name, value = self.sanitize_item(name, value)
                         if is_ok:
@@ -1508,17 +1490,17 @@ class Importer:
                         ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="" , contact=model)
                         ecNumber.contact = model
                         ecNumber.save()
-                    if home:    
+                    if home:
                         number, extension = self.import_number(home)
                         ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="H" , contact=model)
                         ecNumber.contact = model
                         ecNumber.save()
-                    if cell:    
+                    if cell:
                         number, extension = self.import_number(cell)
                         ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="C" , contact=model)
                         ecNumber.contact = model
                         ecNumber.save()
-                    if work:    
+                    if work:
                         number, extension = self.import_number(work)
                         ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="W" , contact=model)
                         ecNumber.contact = model
@@ -1534,7 +1516,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     #@transaction.commit_manually
     def import_students(self, sheet):
         x, header, inserted, updated = self.import_prep(sheet)
@@ -1626,7 +1608,7 @@ class Importer:
                                 model.name = language
                             elif name == "deleted":
                                 model.deleted = self.determine_truth(value)
-                            
+
                             # Import emergency contact shortcut
                             elif name in ["parent first name", 'parent 1 first name']:
                                 p_fname = value
@@ -1656,11 +1638,11 @@ class Importer:
                                 other = value
                             elif name == "password":
                                 password = value
-                                
+
                             # Custom
                             elif name.split() and name.split()[0] == "custom":
                                 custom_fields.append([name.split()[1], value])
-                                
+
                     if not model.username and model.fname and model.lname:
                         model.username = self.gen_username(model.fname, model.lname)
                     model.save()
@@ -1671,11 +1653,11 @@ class Importer:
                         model.save()
                     for (custom_field, value) in custom_fields:
                         model.set_custom_value(custom_field, value)
-                    
+
                     for (name, value) in items:
                         is_ok, name, value = self.sanitize_item(name, value)
                         if is_ok:
-                            if name == "student phone":    
+                            if name == "student phone":
                                 number, extension = self.import_number(value)
                                 contactModel, contactCreated = StudentNumber.objects.get_or_create(number=number, ext=extension, type="H" , student=model)
                                 contactModel.save()
@@ -1720,17 +1702,17 @@ class Importer:
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="" , contact=ec)
                                 ecNumber.contact = ec
                                 ecNumber.save()
-                            if home:    
+                            if home:
                                 number, extension = self.import_number(home)
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="H" , contact=ec)
                                 ecNumber.contact = ec
                                 ecNumber.save()
-                            if cell:    
+                            if cell:
                                 number, extension = self.import_number(cell)
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="C" , contact=ec)
                                 ecNumber.contact = ec
                                 ecNumber.save()
-                            if work:    
+                            if work:
                                 number, extension = self.import_number(work)
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="W" , contact=ec)
                                 ecNumber.contact = ec
@@ -1746,8 +1728,8 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
                 x += 1
         return inserted, updated
-    
-    
+
+
     #@transaction\.commit_manually
     def import_applicants(self, sheet):
         x, header, inserted, updated = self.import_prep(sheet)
@@ -1848,7 +1830,7 @@ class Importer:
                                 model.ready_for_export = self.determine_truth(value)
                             elif name == "student id":
                                 model.sis_student = Student.objects.get(id=value)
-                            
+
                             elif name in ["parent first name", 'parent 1 first name']:
                                 p_fname = value
                             elif name in ["parent middle name", 'parent 1 middle name']:
@@ -1875,7 +1857,7 @@ class Importer:
                                 work = value
                             elif name in ['parent number', 'parent 1 number', 'parent other number', 'parent 1 other number', 'parent phone', 'parent 1 phone', 'parent other phone', 'parent 1 other phone']:
                                 other = value
-                            
+
                             elif name in ['parent 2 first name']:
                                 p2_fname = value
                             elif name in ["parent 2 middle name"]:
@@ -1902,7 +1884,7 @@ class Importer:
                                 work2 = value
                             elif name in ['parent 2 number', 'parent 2 other number', 'parent 2 phone', 'parent 2 other phone']:
                                 other2 = value
-                            
+
                             # Custom
                             elif name.partition(" "):
                                 custom, split, field = name.partition(" ")
@@ -1933,17 +1915,17 @@ class Importer:
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="" , contact=ec)
                                 ecNumber.contact = ec
                                 ecNumber.save()
-                            if home:    
+                            if home:
                                 number, extension = self.import_number(home)
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="H" , contact=ec)
                                 ecNumber.contact = ec
                                 ecNumber.save()
-                            if cell:    
+                            if cell:
                                 number, extension = self.import_number(cell)
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="C" , contact=ec)
                                 ecNumber.contact = ec
                                 ecNumber.save()
-                            if work:    
+                            if work:
                                 number, extension = self.import_number(work)
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="W" , contact=ec)
                                 ecNumber.contact = ec
@@ -1972,12 +1954,12 @@ class Importer:
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="" , contact=ec)
                                 ecNumber.contact = ec2
                                 ecNumber.save()
-                            if home2:    
+                            if home2:
                                 number, extension = self.import_number(home2)
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="H" , contact=ec)
                                 ecNumber.contact = ec2
                                 ecNumber.save()
-                            if cell2:    
+                            if cell2:
                                 number, extension = self.import_number(cell2)
                                 ecNumber, ecNumberCreated = EmergencyContactNumber.objects.get_or_create(number=number, ext=extension, type="C" , contact=ec)
                                 ecNumber.contact = ec2
@@ -1988,10 +1970,10 @@ class Importer:
                                 ecNumber.contact = ec2
                                 ecNumber.save()
                             model.parent_guardians.add(ec2)
-                    
+
                     if model.present_school:
                         model.present_school.type = school_type
-                        
+
                     model.save()
                     for (custom_field, value) in custom_fields:
                         model.set_custom_value(custom_field, value)
@@ -2009,13 +1991,13 @@ class Importer:
                             elif name == "checklist":
                                 check = AdmissionCheck.objects.get(name=value)
                                 model.checklist.add(check)
-                    
+
                     inserted, updated = self.log_and_commit(model, inserted, updated, created)
                 except:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     #@transaction\.commit_manually
     def import_admissions_checks(self, sheet):
         from ecwsp.admissions.models import Applicant, AdmissionCheck
@@ -2028,7 +2010,7 @@ class Importer:
                 created = True
                 applicant = None
                 check = None
-                
+
                 for (name, value) in items:
                     is_ok, name, value = self.sanitize_item(name, value)
                     if is_ok:
@@ -2046,7 +2028,7 @@ class Importer:
                 self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     #@transaction\.commit_manually
     def import_admissions_log(self, sheet):
         from ecwsp.admissions.models import Applicant, ContactLog
@@ -2060,7 +2042,7 @@ class Importer:
                     created = True
                     applicant = None
                     model = ContactLog()
-                    
+
                     for (name, value) in items:
                         is_ok, name, value = self.sanitize_item(name, value)
                         if is_ok:
@@ -2082,11 +2064,11 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
             x += 1
         return inserted, updated
-    
+
     @transaction.commit_on_success
     def import_grades(self, course, marking_period):
         """ Special import for teachers to upload grades
-        Returns Error Message """ 
+        Returns Error Message """
         from ecwsp.grades.models import Grade,GradeComment
         try:
             sheet = self.get_sheet_by_case_insensitive_name(marking_period.name)
@@ -2140,7 +2122,7 @@ class Importer:
                     model.save()
             except:
                 print >> sys.stderr, str(sys.exc_info())
-            x += 1  
+            x += 1
 
     #@transaction\.commit_manually
     def import_workteams(self, sheet):
@@ -2299,7 +2281,7 @@ class Importer:
                     if title: model.title = title
                     model.save()
                     if workteam: model.workteam_set.add(workteam)
-                        
+
                     model.save()
                     if created:
                         self.log_and_commit(model, addition=True)
@@ -2310,7 +2292,7 @@ class Importer:
                 except:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
                 x += 1
-            
+
         return inserted, updated
 
     #@transaction\.commit_manually
@@ -2364,7 +2346,7 @@ class Importer:
                                 supid = value
                                 if Contact.objects.get(id=supid):
                                     model.primary_contact = Contact.objects.get(id=supid)
-                    model.full_clean()                
+                    model.full_clean()
                     model.save()
                     if created:
                         self.log_and_commit(model, addition=True)
@@ -2400,7 +2382,7 @@ class Importer:
                                 if not hasattr(student, 'studentworker'):
                                     student.promote_to_worker()
                                 model.student = StudentWorker.objects.get(id=student.id)
-                                    
+
                             else:
                                 if name == "student unique id" or name == "unique id":
                                     model.student = StudentWorker(unique_id=value)
@@ -2437,7 +2419,7 @@ class Importer:
                     row = sheet.row(x)
                     items = zip(header, row)
                     model = None
-                    
+
                     created = True
                     for (name, value) in items:
                         is_ok, name, value = self.sanitize_item(name, value)
@@ -2480,8 +2462,8 @@ class Importer:
                                 model.student_leave_other = value
                             elif name == "signed":
                                 model.signed = self.determine_truth(value)
-                            
-                            
+
+
                     model.save()
                     if created:
                         self.log_and_commit(model, addition=True)
@@ -2493,7 +2475,7 @@ class Importer:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
                 x += 1
         return inserted, updated
-    
+
     """def import_survey(self, sheet):
         #does not allow  updates
         from ecwsp.work_study.models import Survey, StudentWorker, WorkTeam
@@ -2521,7 +2503,7 @@ class Importer:
                         if is_ok:
                             if student:
                                 student = StudentWorker.objects.get(id=student.id)
-                                    
+
                             else:
                                 if name == "student unique id" or name == "unique id":
                                     student = StudentWorker(unique_id=value)
@@ -2550,12 +2532,12 @@ class Importer:
                         self.log_and_commit(model, addition=True)
                         inserted += 1
                         model = Survey()
-                        
+
                 except:
                     self.handle_error(row, name, sys.exc_info(), sheet.name)
                 x += 1
         return inserted, updated"""
-    
+
     def import_work_study_attendance(self, sheet):
         from ecwsp.work_study.models import StudentWorker, Attendance, AttendanceFee, AttendanceReason
         x, header, inserted, updated = self.import_prep(sheet)
@@ -2611,7 +2593,7 @@ class Importer:
                                 waive = self.determine_truth(value)
                             elif name == "notes":
                                 notes = value
-                                
+
                     if id:
                         model, created = Attendance.objects.get_or_create(id=id)
                     elif student and date:
@@ -2636,7 +2618,7 @@ class Importer:
                             model.fee = AttendanceFee.objects.get(name = fee)
                         except:
                             model.fee = AttendanceFee.objects.get(value = fee)
-                                
+
                     if tardy:
                         if tardy == "A" or tardy == "T":
                             model.tardy = tardy
@@ -2692,7 +2674,7 @@ class Importer:
                                 model.set_password(value)
                             elif name in ['student username', 'student']:
                                 student_username = value
-                                                    
+
                     model.full_clean()
                     model.save()
                     if created:

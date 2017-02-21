@@ -1,21 +1,3 @@
-#   Copyright 2012 Burke Software and Consulting LLC
-#   Author David M Burke <david@burkesoftware.com>
-#   
-#   This program is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 3 of the License, or
-#   (at your option) any later version.
-#     
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#      
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#   MA 02110-1301, USA.
-
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.core.urlresolvers import reverse
@@ -57,7 +39,7 @@ class StudentMeeting(models.Model):
         for student in self.students.all():
             txt += '%s, ' % (student)
         return txt[:-2]
-        
+
     class Meta:
         ordering = ('-date',)
 
@@ -79,7 +61,7 @@ class ReferralForm(models.Model):
     student = models.ForeignKey(Student)
     comments = models.TextField(blank=True)
     referral_reasons = models.ManyToManyField(ReferralReason, blank=True,null=True)
-    
+
     def save(self, *args, **kwargs):
         if not self.id:
             new = True
@@ -97,6 +79,6 @@ class ReferralForm(models.Model):
                     send_mail(subject, msg, from_addr, to_addr)
             except:
                 logging.error('Couldn\'t email counseling referral form', exc_info=True)
-    
+
     def __unicode__(self):
         return 'Referral %s - %s - %s' % (self.date, self.classroom_teacher, self.student)

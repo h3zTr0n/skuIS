@@ -1,19 +1,3 @@
-#   Copyright 2011-2012 Burke Software and Consulting LLC
-#   Author Callista Goss <calli@burkesoftware.com>
-#   
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
-
 #settings required in settings_local.py: QUEXF_DB_USER, QUEXF_DB_PASS, QUEXF_DB_NAME, QUEXF_URL
 
 from reportlab.pdfgen import canvas
@@ -48,12 +32,12 @@ def generate_xml(test_id):
     global entire_testtag
     from xml.dom import minidom
     test = Test.objects.get(id=test_id)
-    
+
 
     def make_pdf(instance):
         global entire_testtag, id
         teacher_section_required = False
-        
+
         doc = minidom.Document()
         testtag = doc.createElement("test")
         id = doc.createElement("id")
@@ -81,10 +65,10 @@ def generate_xml(test_id):
             studentsection.setAttribute("studentid","0")
             studentname = doc.createTextNode(" ")
             studentnametag.appendChild(studentname)
-    
+
         questions = test.question_set.order_by('order')
         essays = []
-            
+
         i = 1 # Question number for human use only
         for q in questions:
             questiontag = doc.createElement("question")
@@ -96,7 +80,7 @@ def generate_xml(test_id):
                 essays.append([q,q.id,i])
                 teacher_section_required = True
                 text = str(i) + ".  Essay Question"
-                
+
             else:
                 text = str(i) + ". "
                 answers = []
@@ -116,7 +100,7 @@ def generate_xml(test_id):
 
                     answers.append((idlist[0],label[0]))
                     answers.append((idlist[1],label[1]))
-                    
+
                 for answer_id, choice in answers:
                     choicetag = doc.createElement("choice")
                     questiontag.appendChild(choicetag)
@@ -126,7 +110,7 @@ def generate_xml(test_id):
                     choicevalue = doc.createTextNode(str(answer_id))
                     choicetag.appendChild(choicevaluetag)
                     choicevaluetag.appendChild(choicevalue)
-                
+
             question_numbertext = doc.createTextNode(text)
             question_number.appendChild(question_numbertext)
             i=i+1
@@ -156,10 +140,10 @@ def generate_xml(test_id):
                     choicevalue = doc.createTextNode(str(choice.id))
                     choicetag.appendChild(choicevaluetag)
                     choicevaluetag.appendChild(choicevalue)
-        
+
         entire_testtag.appendChild(id.cloneNode(True))
-        
-    
+
+
     def validate_pdf(testid):
         db_cursor = get_db_connection().cursor()
         count = db_cursor.execute('select  pages.qid,pid from pages left join questionnaires on questionnaires.qid=pages.qid where questionnaires.description=%s;', (testid,))
@@ -167,45 +151,45 @@ def generate_xml(test_id):
             raise Exception('PDF should have been sent to quexf but was not!')
         for row in db_cursor.fetchall():
             pagesetup(row[0],row[1])
-        
+
 
     entiredoc = minidom.Document()
     entire_testtag = entiredoc.createElement("test")
     entiredoc.appendChild(entire_testtag)
     make_pdf(False)
     first_pdf, first_pdf_location, first_banding = createpdf(entiredoc.toxml())
-    
+
     pdfFile = File(open(first_pdf_location,'r'))
     bandFile = open(first_banding,'r')
     bandName = "banding_" + testid + ".xml"
     test.banding.save(bandName,File(bandFile))
-    
+
     pdfName = "QueXF_Test_" + testid + ".pdf"
     test.queXF_pdf.save(pdfName,pdfFile)
     pdfFile.close()
-    
+
     import_queXF(test.queXF_pdf.path, first_banding, test_id)
-    
+
     entiredoc = minidom.Document()
     entire_testtag = entiredoc.createElement("test")
-    
+
     entiredoc.appendChild(entire_testtag)
     instances = TestInstance.objects.filter(test=test.id)
-    
+
     for instance in instances:
         make_pdf(instance)
-        
+
     pdf, pdf_location, banding = createpdf(entiredoc.toxml())
     pdfFile = File(open(pdf_location,'r'))
     pdfName = "Answer_Sheets_Test_" + testid + ".pdf"
     test.answer_sheet_pdf.save(pdfName,pdfFile)
     pdfFile.close()
-    
+
     test.finalized = True
     test.save()
-    
+
     validate_pdf(testid)
-    
+
     return pdf
 
 
@@ -219,7 +203,7 @@ def createpdf(xml_test):
     pdf = "/test_" + testid + ".pdf"
     temp = gettempdir()
     temp_pdf_file = temp + pdf
-    
+
     c = canvas.Canvas(temp_pdf_file, pagesize=letter)
     createTest(c)
     c.showPage()
@@ -231,10 +215,10 @@ def createpdf(xml_test):
         doc.writexml(banding)
         banding.close()
         return download, temp_pdf_file, temp_banding_file
-        
+
     else:
         return download, temp_pdf_file, False
-    
+
 def newPage(c):
     global page, title, name,next_line
     c.translate(0,0)
@@ -243,7 +227,7 @@ def newPage(c):
         student_barcode(c)
     drawLines(c)
     c.translate(left_margin,bottom_margin)
-    
+
     next_line = first_line
     title_length = title.__len__() * font_size
     if title_length > 245:
@@ -256,15 +240,15 @@ def newPage(c):
     else: name = names[id]
     c.drawString(250,next_line+10,name)
     next_line = next_line - (line_space*2)
-    
-    
+
+
     pageBanding()
     page = page +1
-    
+
 def drawLines(c):
     side_margin = .35
     c.setLineWidth(1.5)
-    
+
     #bottom left
     c.line(side_margin*inch,.5*inch, (1.0 + side_margin) *inch,.5*inch)
     c.line(side_margin*inch,.5*inch,side_margin*inch,1.5*inch)
@@ -277,7 +261,7 @@ def drawLines(c):
     #top right
     c.line(width - side_margin*inch,height - .75*inch,width - (.75 + side_margin)*inch, height - .75*inch)
     c.line(width - side_margin*inch,height - .75*inch,width - side_margin*inch, height - 1.5*inch)
-    
+
 def barcode(c):
     global code
     code = str(testid).zfill(4) + (str(page).zfill(1))
@@ -285,24 +269,24 @@ def barcode(c):
     x = width - (4.6*inch)  #4.8, 3.1 for 4 & 1
     y = height - (.7*inch)
     barcode.drawOn(c,x,y)
-    
+
 def student_barcode(c):
     global student_code
     #7 digits
     student_code = student_id[id].zfill(7)
     stopped_student_code = "A" + student_code + "A"
     student_barcode = Codabar(stopped_student_code,barWidth = inch*.03)
-    x = left_margin - (.3*inch) 
+    x = left_margin - (.3*inch)
     y= height - (1.25*inch)
     student_barcode.drawOn(c,x,y)
-    
+
 def createTest(c):
     #need to do it for multiple tests -tests[id]:questions and -teacher_tests[id]:teacher_questions
     global indent, questions, choices, column, sort, next_line, width, height, next_line,left_margin,right_margin,bottom_margin,top_margin
     global id, var_names, teacher_varnames, page, title, font_size, first_line, line_space
     indent = 0
     column = 0
-    
+
     #top right corner is 612x792 - x,y in 1/72 of an inch OR (width-margins) x (1height-margins)
     #translate: moves the starting point up and to the right x*inch
     #global default_font, font_size, line_space,left_margin,right_margin,top_margin,bottom_margin,first_line,width,height,indent
@@ -323,9 +307,9 @@ def createTest(c):
         test_count+=1
         newPage(c)
         c.setFont(default_font,font_size)
-        
-        
-        
+
+
+
         def createSections(questions,choices, varnames):
             global indent, column, sort, next_line
             prior_question = None
@@ -362,7 +346,7 @@ def createTest(c):
                 else:
                     extra_indent = 20 #25 works
                     #skip_row = next_line;
-                    
+
                 c.drawString(indent,next_line,question)
                 if choice_number !=0:
                     questionBanding(question,varname)
@@ -386,28 +370,28 @@ def createTest(c):
                     current_choice_count+=1
                 next_line = next_line - line_space
                 prior_question = question
-    
-    
-    
+
+
+
         createSections(questions,choices,var_names)
         if teacherNode:
             next_line = next_line - line_space*4
             if next_line + font_size <= 0:
                 column +=1
                 if column == 3:
-                    column=0    
+                    column=0
                     c.showPage()
                     newPage(c)
                 next_line = first_line - line_space*2
                 indent = ((width-left_margin-right_margin)/3)*column
             c.drawString(indent,next_line,teacher_section)
             beginy = next_line+line_space
-            
+
             c.line(indent,beginy,140+indent,beginy)
             next_line = next_line - (line_space)
             [teacher_questions,teacher_varnames] = teacher_tests[test]
             createSections(teacher_questions,teacher_choices,teacher_varnames)
-            
+
 
         if ct < tests.__len__():
             column = 0
@@ -461,9 +445,9 @@ def xml(test_xml):
                 questiontemp += `counter` + '.'
             questions[questiontemp] = choices
             var_names[questiontemp] = varname
-        
+
         tests[id] = [questions,var_names]
-            
+
         #teacher = {{dict of essay questions:[list of point values]}{}}
         if teacherNode!=None:
             teacher_section = teacherNode.getElementsByTagName('name')[0].firstChild.data
@@ -488,7 +472,7 @@ def xml(test_xml):
                     questiontemp += `counter` + '.'
                 teacher_questions[questiontemp] = teacher_choices
                 teacher_varnames[questiontemp] = varname
-            
+
             teacher_tests[id] = [teacher_questions,teacher_varnames]
 
 def createBanding():
@@ -501,7 +485,7 @@ def createBanding():
 
 def testBanding(number):
     global doc, questionnaire
-    
+
     sectiontag = doc.createElement("section")
     sectiontag.setAttribute("id",str(number))
     questionnaire.appendChild(sectiontag)
@@ -513,7 +497,7 @@ def testBanding(number):
     sectiontag.appendChild(label)
     labeltext = doc.createTextNode(str(names[id]))
     label.appendChild(labeltext)
-    
+
 def pageBanding():
     global pagetag, page
     pagetag = doc.createElement("page")
@@ -522,15 +506,15 @@ def pageBanding():
     pagetag.appendChild(pgidtag)
     pgidtext = doc.createTextNode(str(code))
     pgidtag.appendChild(pgidtext)
-    
+
     rotationtag = doc.createElement("rotation")
     pagetag.appendChild(rotationtag)
     rotationText = doc.createTextNode("0")
     rotationtag.appendChild(rotationText)
     if student_id[id]=="0":
         barcodeBoxgroup()
-    
-    
+
+
 #def barcodeBanding():
 #    #doesn't work - inquiry is into QueXF
 #    boxgroup = doc.createElement("boxgroup")
@@ -558,10 +542,10 @@ def pageBanding():
 #    groupsectiontag = doc.createElement("groupsection")
 #    #groupsectiontag.setAttribute("idref","1")
 #    boxgroup.appendChild(groupsectiontag)
-#    
-#    
+#
+#
 #    topx = (.04*inch + left_margin) *300/72
-#    topy = (.4*inch) *300/72    
+#    topy = (.4*inch) *300/72
 #    botx = (2.4*inch + left_margin) *300/72
 #    boty = (.6*inch) *300/72
 #    box = doc.createElement("box")
@@ -570,7 +554,7 @@ def pageBanding():
 #    boxidtext = doc.createTextNode(str(page)) #will be student id
 #    box.appendChild(boxid)
 #    boxid.appendChild(boxidtext)
-#    
+#
 #    tlx = doc.createElement("tlx")
 #    box.appendChild(tlx)
 #    tlxnum = doc.createTextNode(str(topx))
@@ -611,7 +595,7 @@ def barcodeBoxgroup():
                       " values (210, 185, 1175, 450, " + str(pageid) + ",LAST_INSERT_ID(),"+
                       str(student_id[id]) + ")")
     db.commit()
-    
+
 def questionBanding(question, variable_name):
     global boxgroup
     boxgroup = doc.createElement("boxgroup")
@@ -639,7 +623,7 @@ def questionBanding(question, variable_name):
     groupsectiontag = doc.createElement("groupsection")
     groupsectiontag.setAttribute("idref","1")
     boxgroup.appendChild(groupsectiontag)
-        
+
 def choiceBanding(topx,topy,botx,boty,choice,value):
     topx = round((topx+inch)*300/72)
     botx = round((botx+inch)*300/72)

@@ -1,21 +1,3 @@
-#       Copyright 2010-2011 Burke Software and Consulting LLC
-#       Author David M Burke <david@burkesoftware.com>
-#       
-#       This program is free software; you can redistribute it and/or modify
-#       it under the terms of the GNU General Public License as published by
-#       the Free Software Foundation; either version 3 of the License, or
-#       (at your option) any later version.
-#       
-#       This program is distributed in the hope that it will be useful,
-#       but WITHOUT ANY WARRANTY; without even the implied warranty of
-#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#       GNU General Public License for more details.
-#       
-#       You should have received a copy of the GNU General Public License
-#       along with this program; if not, write to the Free Software
-#       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#       MA 02110-1301, USA.
-
 from django import forms
 from django.contrib.localflavor.us.forms import *
 from django.contrib.admin import widgets as adminwidgets
@@ -29,12 +11,12 @@ from ajax_filtered_fields.forms import ManyToManyByRelatedField
 
 from ecwsp.sis.models import *
 from ecwsp.schedule.models import *
-from ecwsp.administration.models import * 
+from ecwsp.administration.models import *
 
 class StudentForm(forms.ModelForm):
     class Meta:
         model = Student
-    
+
     ssn = USSocialSecurityNumberField(required=False)
     state = USStateField()
     zip = USZipCodeField(required=False)
@@ -71,17 +53,17 @@ class TimeBasedForm(forms.Form):
     date_end = forms.DateField(widget=adminwidgets.AdminDateWidget(), required=False, validators=settings.DATE_VALIDATORS)
     marking_period = forms.ModelMultipleChoiceField(required=False, queryset=MarkingPeriod.objects.all())
     include_deleted = forms.BooleanField(required=False)
-    
+
     class Media:
         js = ('/static/js/time_actions.js',)
-        
+
     def clean(self):
         data = self.cleaned_data
         if not data.get("this_year") and not data.get("all_years"):
             if not data.get("date_begin") or not data.get("date_end"):
                 raise forms.ValidationError("You must select this year, all years, or specify a date.")
         return data
-    
+
     def get_dates(self):
         """ Returns begining and start dates in a tuple
         Pass it form.cleaned_data """
@@ -110,7 +92,7 @@ class StudentSelectForm(TimeBasedForm):
     sort_by = forms.ChoiceField(choices=(('lname', 'Student last name'), ('year', 'School year'), ('cohort', 'Primary Cohort')), initial=1)
     filter_year = forms.ModelMultipleChoiceField(required=False, queryset=GradeLevel.objects.all())
     filter_cohort = forms.ModelMultipleChoiceField(required=False, queryset=Cohort.objects.all())
-    
+
     def get_template(self, request):
         if self.cleaned_data['template']:
             # use selected template
@@ -127,7 +109,7 @@ class StudentSelectForm(TimeBasedForm):
             f.write(template.read())
             f.close()
             return tmpfile
-    
+
     def get_students(self, options, worker=False):
         """ Returns all students based on criteria. data should be form.cleaned_data """
         if worker:
@@ -135,7 +117,7 @@ class StudentSelectForm(TimeBasedForm):
             students = StudentWorker.objects.all()
         else:
             students = Student.objects.all()
-        
+
         # if selecting individual students, don't filter out deleted
         # why? Because it's unintuitive to pick one student, forgot about "include
         # deleted" and hit go to recieve a blank sheet.
@@ -143,21 +125,21 @@ class StudentSelectForm(TimeBasedForm):
             students = students.filter(id__in=options['student'])
         elif not options['include_deleted']:
             students = students.filter(inactive=False)
-        
+
         if options['student'].count == 1:
             data['student'] = options['student'][0]
-            
+
         if options['sort_by'] == "year":
             students = students.order_by('year', 'lname', 'fname')
-        elif options['sort_by'] == "cohort":  
+        elif options['sort_by'] == "cohort":
             students = students.order_by('cache_cohort', 'lname', 'fname')
-        
+
         if options['filter_year']:
             students = students.filter(year__in=options['filter_year'])
-        
+
         if options['filter_cohort']:
             students = students.filter(cohorts__in=options['filter_cohort'])
-        
+
         return students
 
 
@@ -174,7 +156,7 @@ class StudentBulkChangeForm(forms.Form):
 class StudentReportWriterForm(StudentSelectForm):
     template = forms.ModelChoiceField(required=False, queryset=Template.objects.all())
     upload_template = forms.FileField(required=False, help_text="You may choose a template or upload one here")
-    
+
     def clean(self):
         data = super(StudentReportWriterForm, self).clean()
         if not data.get('student') and not data.get('all_students'):
@@ -202,7 +184,7 @@ class StudentGradeReportWriterForm(forms.Form):
         if not data.get('template') and not data.get('upload_template'):
             raise forms.ValidationError("You must either select a template or upload one.")
         return data
-    
+
     def get_students(self, options, worker=False):
         """ Returns all students based on criteria. data should be form.cleaned_data """
         if worker:
@@ -210,7 +192,7 @@ class StudentGradeReportWriterForm(forms.Form):
             students = StudentWorker.objects.all()
         else:
             students = Student.objects.all()
-        
+
         # if selecting individual students, don't filter out deleted
         # why? Because it's unintuitive to pick one student, forgot about "include
         # deleted" and hit go to recieve a blank sheet.
@@ -218,19 +200,19 @@ class StudentGradeReportWriterForm(forms.Form):
             students = students.filter(id__in=options['student'])
         elif not options['include_deleted']:
             students = students.filter(inactive=False)
-        
+
         if options['student'].count == 1:
             data['student'] = options['student'][0]
-            
+
         if options['sort_by'] == "year":
             students = students.order_by('year', 'lname', 'fname')
-        elif options['sort_by'] == "hoomroom":  
+        elif options['sort_by'] == "hoomroom":
             pass
-        
+
         if options['filter_year']:
             students = students.filter(year__in=options['filter_year'])
-        
+
         if options['filter_cohort']:
             students = students.filter(cohorts__in=options['filter_cohort'])
-        
+
         return students

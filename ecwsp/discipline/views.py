@@ -1,21 +1,3 @@
-#   Copyright 2011 David M Burke
-#   Author David M Burke <david@burkesoftware.com>
-#   
-#   This program is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 3 of the License, or
-#   (at your option) any later version.
-#     
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#      
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#   MA 02110-1301, USA.
-
 from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
@@ -39,9 +21,9 @@ class BaseDisciplineFormSet(BaseModelFormSet):
         form.fields["students"] = AutoCompleteSelectMultipleField('dstudent')
         form.fields['comments'].widget = forms.TextInput(attrs={'size':'50'})
         form.fields['date'].widget = adminwidgets.AdminDateWidget()
-                
 
-@user_passes_test(lambda u: u.has_perm('discipline.change_studentdiscipline'))   
+
+@user_passes_test(lambda u: u.has_perm('discipline.change_studentdiscipline'))
 def enter_discipline(request):
     DisciplineFormSet = modelformset_factory(StudentDiscipline, extra=5, formset=BaseDisciplineFormSet)
     if request.method == 'POST':
@@ -79,38 +61,38 @@ def discipline_report(request, student_id):
     template = template.get_template_path(request)
     report = TemplateReport(request.user)
     report.filename = 'disc_report'
-    
+
     school_name, created = Configuration.objects.get_or_create(name="School Name")
     school_name = school_name.value
-    
+
     student = Student.objects.get(id=student_id)
     disc = StudentDiscipline.objects.filter(students=student)
-    
+
     report.data['disciplines'] = disc
     report.data['school_year'] = SchoolYear.objects.get(active_year=True)
     report.data['student'] = student
     report.data['student_year'] = student.year
-    
-    return report.pod_save(template)
-    
 
-@user_passes_test(lambda u: u.has_perm('discipline.change_studentdiscipline') or u.has_perm('sis.reports'))   
+    return report.pod_save(template)
+
+
+@user_passes_test(lambda u: u.has_perm('discipline.change_studentdiscipline') or u.has_perm('sis.reports'))
 def discipline_list(request, type="doc", start_date=False, end_date=False):
     template = Template.objects.get_or_create(name="Discipline Daily List")[0].get_template_path(request)
     if not template:
         return HttpResponseRedirect(reverse('admin:index'))
-    
+
     data={}
     if start_date:
         discs = StudentDiscipline.objects.filter(date__range=(start_date, end_date))
     else:
         discs = StudentDiscipline.objects.filter(date=date.today())
-    
+
     data['disciplines'] = []
     for disc in discs:
         for student in disc.students.all():
             data['disciplines'].append(student)
-    
+
     return pod_report(template, data, "Discipline List")
 
 @permission_required('discipline.change_studentdiscipline')
@@ -122,7 +104,7 @@ def generate_from_attendance(request):
     tardies_before_disc = Configuration.get_or_default("attendance_disc_tardies_before_disc", "1").value
     conf_infraction = Configuration.get_or_default("attendance_disc_infraction", "").value
     conf_action = Configuration.get_or_default("attendance_disc_action", "").value
-    
+
     if request.POST:
         students = Student.objects.filter(id__in=request.POST.keys())
         i=0
@@ -140,9 +122,9 @@ def generate_from_attendance(request):
             i += 1
         messages.success(request,'Created %s new record(s)' % (i,))
         return HttpResponseRedirect(reverse('admin:discipline_studentdiscipline_changelist'))
-    
+
     year = SchoolYear.objects.get(active_year=True)
-    
+
     students = []
     for student in Student.objects.filter(
         student_attn__date=datetime.date.today(),
@@ -164,8 +146,8 @@ def generate_from_attendance(request):
                 date__range=(year.start_date,year.end_date)
             )
             students.append(student)
-            
-            
+
+
     return render_to_response('discipline/generate_from_attendance.html', {
         'request': request,
         'students': students,
@@ -191,7 +173,7 @@ def discipline_report_view(request):
                 l4 = merit_form.cleaned_data['level_four']
                 start_date = merit_form.cleaned_data['start_date']
                 end_date = merit_form.cleaned_data['end_date']
-                
+
                 students = Student.objects.filter(inactive=False)
                 if merit_form.cleaned_data['sort_by'] == 'year':
                     students = students.order_by('year')
@@ -248,13 +230,13 @@ def discipline_report_view(request):
                         titles.append("")
                     titles.pop()
                     data.append(subtitles)
-                    
+
                     pref = UserPreference.objects.get_or_create(user=request.user)[0]
                     for student in students:
                         disciplines = student.studentdiscipline_set.all()
                         disciplines = disciplines.filter(date__range=(start, end))
                         stats = [unicode(student),]
-                        
+
                         add = True
                         for infr in Infraction.objects.all():
                             number = disciplines.filter(infraction=infr, students=student).count()
@@ -271,31 +253,31 @@ def discipline_report_view(request):
                             if form.cleaned_data['action'] == action:
                                 if actions < form.cleaned_data['minimum_action']:
                                     add = False
-                             
+
                         pref.get_additional_student_fields(stats, student, students, titles)
                         if add: data.append(stats)
-                    
+
                     report = XlReport(file_name="disc_stats")
                     report.add_sheet(data, header_row=titles, title="Discipline Stats", heading="Discipline Stats")
-                    
+
                     # By Teacher
                     data = []
                     titles = ['teacher']
                     for action in DisciplineAction.objects.all():
                         titles.append(action)
-                    
+
                     teachers = Faculty.objects.filter(studentdiscipline__isnull=False).distinct()
                     disciplines = StudentDiscipline.objects.filter(date__range=(start, end))
-                    
+
                     for teacher in teachers:
                         row = [teacher]
                         for action in DisciplineAction.objects.all():
                             row.append(disciplines.filter(teacher=teacher, action=action).count())
                         data.append(row)
-                    
+
                     report.add_sheet(data, header_row=titles, heading="By Teachers")
                     return report.as_download()
-                    
+
                 elif 'aggr' in request.POST:
                     disciplines = StudentDiscipline.objects.filter(date__range=(start, end))
                     if form.cleaned_data['this_year']:
@@ -304,27 +286,27 @@ def discipline_report_view(request):
                         disciplines = disciplines.filter(date__range=(school_start, school_end))
                     elif not form.cleaned_data['this_year'] and not form.cleaned_data['all_years']:
                         disciplines = disciplines.filter(date__range=(form.cleaned_data['date_begin'], form.cleaned_data['date_end']))
-                    
+
                     stats = []
                     titles = []
                     for infr in Infraction.objects.all():
                         titles.append(infr)
                         number = disciplines.filter(infraction=infr).count()
                         stats.append(number)
-                    
+
                     for action in DisciplineAction.objects.all():
                         titles.append(action)
                         number = 0
                         for a in DisciplineActionInstance.objects.filter(action=action):
                             number += a.quantity
                         stats.append(number)
-                        
+
                     data.append(stats)
                     report = XlReport(file_name="disc_stats")
                     report.add_sheet(data, header_row=titles, title="Discipline Stats", heading="Discipline Stats")
                     return report.as_download()
             else:
                 return render_to_response('discipline/disc_report.html', {'request': request, 'form': form},
-                                          RequestContext(request, {}),)    
+                                          RequestContext(request, {}),)
     return render_to_response('discipline/disc_report.html', {'request': request, 'form': form, 'merit_form':merit_form,},
                               RequestContext(request, {}),)
