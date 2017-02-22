@@ -25,7 +25,7 @@ here = lambda *x: join(abspath(dirname(__file__)), *x)
 PROJECT_ROOT = here("..",)
 root = lambda *x: join(abspath(PROJECT_ROOT), *x)
 
-TEMPLATE_DIRS = root('templates/')
+# TEMPLATE_DIRS = root('templates/')
 STATICFILES_DIRS = ((''),
     root('static_files/'),
 )
@@ -90,12 +90,41 @@ SITE_ID = 1
 INTERNAL_IPS = ('127.0.0.1',)
 USE_I18N = True
 SECRET_KEY = '4@=mqjpx*f$3m(1-wl6&02p#cx@*dz4_t26lu@@pmd^2%+)**y'
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-    'apptemplates.Loader',
-    'django.template.loaders.eggs.Loader',
-)
+#################
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            root('templates/'),
+            # TEMPLATE_DIRS = root('templates/')
+        ],
+        'APP_DIRS': False,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                # custom
+                "core.context_processors.site_processor",
+                "core.context_processors.debug_processor",
+            ],
+            'loaders': [
+                'django.template.loaders.filesystem.Loader',
+                'django.template.loaders.app_directories.Loader',
+                'django.template.loaders.eggs.Loader',
+            ],
+        },
+    },
+]
+
+#######################
+# TEMPLATE_LOADERS = (
+#     'django.template.loaders.filesystem.Loader',
+#     'django.template.loaders.app_directories.Loader',
+#     'apptemplates.Loader',
+#     'django.template.loaders.eggs.Loader',
+# )
 ROOT_URLCONF = 'django_sis.urls'
 WSGI_APPLICATION = 'ecwsp.wsgi.application'
 
@@ -125,16 +154,16 @@ MIDDLEWARE_CLASSES = (
     'pagination.middleware.PaginationMiddleware',
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
     )
-TEMPLATE_CONTEXT_PROCESSORS = (
-    "django.contrib.auth.context_processors.auth",
-    "django.core.context_processors.request",
-    "django.core.context_processors.i18n",
-    'django.contrib.messages.context_processors.messages',
-    'django.core.context_processors.debug',
-    'django.core.context_processors.media',
-    'ecwsp.sis.context_processors.global_stuff',
-    'django.core.context_processors.static',
-)
+# TEMPLATE_CONTEXT_PROCESSORS = (
+#     "django.contrib.auth.context_processors.auth",
+#     "django.core.context_processors.request",
+#     "django.core.context_processors.i18n",
+#     'django.contrib.messages.context_processors.messages',
+#     'django.core.context_processors.debug',
+#     'django.core.context_processors.media',
+#     'ecwsp.sis.context_processors.global_stuff',
+#     'django.core.context_processors.static',
+# )
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
@@ -438,4 +467,5 @@ INSTALLED_APPS += (
     'report_builder',
     #'responsive_dashboard',
     'simple_import',
+    # 'localflavour',
 )
